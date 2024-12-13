@@ -8,7 +8,7 @@ import pdb
 _SPEC_FILENAME = "visualization_spec_template2.vg.json"
 _SPEC_PATH = path.join(path.dirname(__file__), _SPEC_FILENAME)
 
-_DEFAULT_WIDTH = 2300
+_DEFAULT_WIDTH = 3000
 _DEFAULT_HEIGHT = 1200
 
 def add_vega_chart(viz_spec: Dict, height=_DEFAULT_HEIGHT, width=_DEFAULT_WIDTH):

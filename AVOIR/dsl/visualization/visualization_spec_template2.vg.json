@@ -366,13 +366,17 @@
           "encode": {
             "enter": {
               "text": {
-                "field": "repr"
+                "field": "repr",
+                "signal": "replace(datum.repr, /]/g, ']] ')"
               },
               "fontSize": {
                 "value": 22
               },
               "baseline": {
                 "value": "middle"
+              },
+              "lineBreak": {
+                "value": "] "
               }
             },
             "update": {
