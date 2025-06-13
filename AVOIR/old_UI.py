@@ -2,6 +2,8 @@ from typing import ClassVar
 import streamlit as st
 from stqdm import stqdm
 from dsl import spec, SpecTracker
+import seaborn as sns
+import matplotlib.pyplot as plt
 from dsl.grammar import (
     create_variable as V,
     Expectation as E,
@@ -12,6 +14,7 @@ from dsl.visualization import add_vega_chart, create_viz_spec
 from dsl.tests.datasets import get_dataset_names, get_dataset_attr_list, get_dataset_attr_dict, Dataset, get_dataset
 from dsl.tests.models import get_models, get_model, ModelBasedTest, InvalidTargetError, InvalidTrainError, _view_maintenance
 import pdb
+import time
 
 class CustomDatasetModel(ModelBasedTest):
     def __init__(self, dataset, output_var, input_vars, attrs, model: ClassVar[ModelBasedTest]):
@@ -49,10 +52,20 @@ class CustomDatasetModel(ModelBasedTest):
 
 
 def provide_model_eval_interface(model_obj):
+    selected_fairness = st.session_state.get("selected_fairness", "N/A")
+    dataset_name = st.session_state.get("selected_dataset_name", "N/A")
     model_obj.update_spec(eval(spec_code))  # TODO DANGEROUS
     if st.button("Run spec analysis"):
         with st.spinner("Running analysis"):
+            start_time = time.perf_counter()
             model_obj.run_eval_loop(progress_bar=stqdm)
+            end_time = time.perf_counter()
+
+            elapsed_time = end_time - start_time
+            st.success(
+                f"Fairness metric '{selected_fairness}' took "
+                f"{elapsed_time:.4f} seconds to run on dataset '{dataset_name}'."
+            )
         with st.spinner("Generating spec chart"):
             data_values = model_obj.get_tabular_rep()
             viz_spec = create_viz_spec(data_values)
@@ -63,18 +76,76 @@ def provide_model_eval_interface(model_obj):
 
 if __name__ == "__main__":
     st.set_page_config(layout='wide')
+    st.markdown("""
+    <style>
+    .big-font {
+        font-size:20px !important;
+    }
+    """, unsafe_allow_html=True)
+    
     # datasets
     datasets = get_dataset_names()
-    selected_dataset_name = st.selectbox("Select dataset", datasets, index=2)
+    st.header("Dataset Selection")
+    selected_dataset_name = st.selectbox("", datasets, index=2)
     selected_dataset = get_dataset(selected_dataset_name)
 
     dataset_attr_dict = get_dataset_attr_dict(selected_dataset_name)
-    st.markdown("## Dataset attributes ")
-    st.write(dataset_attr_dict)
+    st.header("Dataset Attributes")
+    st.json(dataset_attr_dict, expanded= False)
     attr_list = selected_dataset.attributes
     #st.write(attr_list)
 
-    selected_model_name = st.selectbox("Select ML model", get_models())
+    # After dataset is selected
+    if selected_dataset_name == "Compas":
+        # Load the dataset into a DataFrame 
+        dataset_df = selected_dataset.train  # Or select test data, or both
+        
+        # Reshape the data to long format to combine race columns
+        race_columns = ["race_African-American", "race_Asian", "race_Caucasian", 
+                        "race_Hispanic", "race_Native American", "race_Other"]
+        
+        # Melt the dataset to have a column for race and a binary value for each row
+        melted_df = dataset_df[race_columns].melt(var_name="race", value_name="is_member")
+        
+        # Filter out rows where `is_member` is False (only keep rows where the individual belongs to that race)
+        melted_df = melted_df[melted_df["is_member"] == 1]
+        
+        # Add a button to trigger the plot display
+        if st.button("Show Race Distribution Histogram"):
+            st.markdown("### Histogram of Race Distribution")
+            
+            # Create the plot
+            plt.figure(figsize=(10, 6))
+            sns.countplot(data=melted_df, x="race")
+            
+            # Display the plot in Streamlit
+            st.pyplot(plt)
+    elif selected_dataset_name == "Adult Income":
+        # Load the dataset into a DataFrame
+        dataset_df = selected_dataset.train  # Or select test data, or both
+        
+        # Reshape the data to long format to combine race columns
+        race_columns = ["sex_Male", "sex_Female"]
+        
+        # Melt the dataset to have a column for race and a binary value for each row
+        melted_df = dataset_df[race_columns].melt(var_name="sex", value_name="is_member")
+        
+        # Filter out rows where `is_member` is False (only keep rows where the individual belongs to that race)
+        melted_df = melted_df[melted_df["is_member"] == 1]
+        
+        # Add a button to trigger the plot display
+        if st.button("Show Gender Distribution Histogram"):
+            st.markdown("### Histogram of Gender Distribution")
+            
+            # Create the plot
+            plt.figure(figsize=(10, 6))
+            sns.countplot(data=melted_df, x="sex")
+            
+            # Display the plot in Streamlit
+            st.pyplot(plt)
+
+    st.header("Model Selection")
+    selected_model_name = st.selectbox("", get_models())
     selected_model = get_model(selected_model_name)
 
     if selected_model_name == _view_maintenance:
@@ -82,21 +153,25 @@ if __name__ == "__main__":
         input_vars = attr_list
     else:
         col1, col2 = st.columns(2)
-        output_var = col1.selectbox("Choose output variable", attr_list, index=attr_list.index(selected_dataset.target))
-        input_vars = col2.multiselect("Choose input variables", attr_list, default=selected_dataset.inputs)
+        with col1:
+            st.subheader("Output Variable")
+        with col2:
+            st.subheader("Input Variables")
+        output_var = col1.selectbox("", attr_list, index=attr_list.index(selected_dataset.target))
+        input_vars = col2.multiselect("", attr_list, default=selected_dataset.inputs)
         if output_var in input_vars:
-            st.markdown("***NOTE: input includes output***")
+            st.markdown('<p class="big-font">NOTE: input includes output</p>', unsafe_allow_html=True)
     
     #st.markdown(f"These attributes can be used as variables in the spec: {', '.join(input_vars)} ")
-    st.markdown(f"These attributes can be used as variables in the spec: {', '.join(attr_list)} ")
-    st.markdown("Note: Return variable is **r**, basically, the output variable of the model is represented by **r**;"
-                " and other variables must be input in quotes. 'x' refers to the full input")
+    st.markdown('<p class="big-font">'f"These attributes can be used as variables in the spec: {', '.join(attr_list)} "'</p>', unsafe_allow_html= True)
+    st.markdown('<p class="big-font">Note: Return variable is *r*, basically, the output variable of the model is represented by *r*; and other variables must be input in quotes. *x* refers to the full input</p>', unsafe_allow_html=True)
 
     test_specs = {
         "Adult Income": 'E(r, given=(V("sex_Male") == 1)) / E(r, given=(V("sex_Female") == 1)) < 1.2',
         "Boston Housing Prices": 'E(r, given=(V("lstat") > 12)) / E(r, given=(V("lstat") < 12)) > 0.6',
         "Rate My Professors": 'E(r, given=(V("gender_male") == 1) & (V("male_dominated_department") == 1)) / E(r, given=(V("gender_female") == 1) & (V("male_dominated_department") == 1)) < 1.2',
-        "Compas": '(E(V("two_year_recid"),given=(V("score_text_Low") == 0) & (V("race_African-American") == 1))) / (E(V("two_year_recid"),given=(V("score_text_Low") == 0) & (V("race_Caucasian") == 1))) > 1.0'
+        "Compas": '(E(V("two_year_recid"),given=(V("score_text_Low") == 0) & (V("race_African-American") == 1))) / (E(V("two_year_recid"),given=(V("score_text_Low") == 0) & (V("race_Caucasian") == 1))) > 1.0',
+        "ACSIncome": 'E(r, given=(V("SEX_1.0") == 1)) / E(r, given=(V("SEX_2.0") == 1)) < 1.2'
     }
     # initial_spec = test_specs.get(selected_dataset_name, test_specs.get("Boston Housing Prices"))
     # spec_code = st.text_input("Spec:", initial_spec)
@@ -104,7 +179,7 @@ if __name__ == "__main__":
     # Fairness specifications template dictionary
     fairness_specs_templates = {
         "Demographic Parity": 'E(r, given=(V("{group1_attr}") == {group1_value})) / E(r, given=(V("{group2_attr}") == {group2_value})) < {threshold}',
-        "Equalized Odds": 'E(r, given=(V("{group1_attr}") == {group1_value}) & (V("{label_attr}") == {label_value})) / E(r, given=(V("{group2_attr}") == {group2_value}) & (V("{label_attr}") == {label_value})) < {threshold}',
+        "Equalized Odds": '(E(r, given=(V("{group1_attr}") == {group1_value}) & (V("{label_attr}") == {label_value})) / E(r, given=(V("{group2_attr}") == {group2_value}) & (V("{label_attr}") == {label_value})) < {threshold}) & (E(r, given=(V("{group1_attr}") == {group1_value}) & (V("{label_attr}") == {label_value_not})) / E(r, given=(V("{group2_attr}") == {group2_value}) & (V("{label_attr}") == {label_value_not})) < {threshold})' ,
         "Equal Opportunity": 'E(r, given=(V("{group1_attr}") == {group1_value}) & (V("{label_attr}") == {label_value})) / E(r, given=(V("{group2_attr}") == {group2_value}) & (V("{label_attr}") == {label_value})) > {threshold}',
     }
 
@@ -117,6 +192,16 @@ if __name__ == "__main__":
             "group2_value": 1,
             "label_attr": "high_income",
             "label_value": 1,
+            "label_value_not": 0
+        },
+        "ACSIncome": {
+            "group1_attr": "SEX_1.0",
+            "group1_value": 1,
+            "group2_attr": "SEX_2.0",
+            "group2_value": 1,
+            "label_attr": "target",
+            "label_value": 1,
+            "label_value_not": 0
         },
         "Rate My Professors": {
             "group1_attr": "gender_male",
@@ -133,6 +218,7 @@ if __name__ == "__main__":
             "group2_value": 1,
             "label_attr": "two_year_recid",
             "label_value": 1,
+            "label_value_not": 0
         },
     }
 
@@ -150,20 +236,27 @@ if __name__ == "__main__":
     selected_dataset_attrs = dataset_attributes.get(selected_dataset_name, {})
 
     # Display Fairness Notions
-    st.markdown("### Select a Fairness Notion")
-    selected_fairness = st.selectbox("Choose a fairness notion to apply:", list(fairness_specs_templates.keys()))
+    st.header("Fairness Metric Selection")
+    selected_fairness = st.selectbox("", list(fairness_specs_templates.keys()))
+
+    st.session_state.selected_fairness = selected_fairness  
+    st.session_state.selected_dataset_name = selected_dataset_name  
 
     # Display threshold selection
-    st.markdown("### Define Fairness Threshold")
-    threshold = st.slider("Fairness threshold (e.g., 1.2 for Demographic Parity):", 0.0, 2.0, 1.2)
+    st.markdown('<p class="big-font">Choose the Fairness threshold (e.g., 1.2 for Demographic Parity):</p>', unsafe_allow_html=True)
+    threshold = st.slider("", 0.0, 2.0, 1.2)
+    st.session_state.threshold = threshold
 
     # Customization for racial groups in COMPAS dataset only
     if selected_dataset_name == "Compas":
-        st.markdown("### Customize Race Groups")
+        st.subheader("Customize Race Groups")
         col1, col2 = st.columns(2)
-
-        group1_attr = col1.selectbox("Select Group 1 Race", racial_groups, index=racial_groups.index("race_African-American"))
-        group2_attr = col2.selectbox("Select Group 2 Race", racial_groups, index=racial_groups.index("race_Caucasian"))
+        with col1:
+            st.subheader("Group 1 Race")
+        with col2:
+            st.subheader("Group 2 Race")
+        group1_attr = col1.selectbox("", racial_groups, index=racial_groups.index("race_African-American"))
+        group2_attr = col2.selectbox("", racial_groups, index=racial_groups.index("race_Caucasian"))
 
         # Update dataset-specific attributes with selected races
         selected_dataset_attrs["group1_attr"] = group1_attr
@@ -176,24 +269,23 @@ if __name__ == "__main__":
         selected_dataset_attrs["threshold"] = threshold  # Add the threshold to the dataset attributes
         selected_spec_template = fairness_specs_templates[selected_fairness]
         selected_spec_code = selected_spec_template.format(**selected_dataset_attrs)
-        st.markdown(f"##### Generated Specification: `{selected_spec_code}`")
+        st.markdown(f"#### Generated Specification: `{selected_spec_code}`")
     else:
         st.warning("This dataset does not have predefined fairness attributes. Please configure attributes manually.")
 
-    if selected_dataset_name == "Compas":
-        if selected_fairness == "Demographic Parity":
-            st.markdown("Note: This metric compares the expected outcomes between two racial groups. It checks if the ratio of the expected outcome for race1 to that of race2 is less than threshold."
-                        "A ratio near to 1, suggesting the model is fairer in its predictions across races. By evaluating this metric, you can ensure that the model does not disproportionately favor one racial group over another.")
-        else:
-            st.markdown("Note: This metric compares the expected outcomes between race1 and race2 individuals who both have a two-year recidivism risk score of 1."
-                        "A ratio near to 1 suggests that the model produces more equitable predictions for individuals from both racial groups who share similar recidivism risk profiles. By evaluating this metric, you can ensure that the model does not disproportionately favor one racial group over another, particularly in the context of recidivism prediction.")
-    elif selected_dataset_name == "Adult Income":
-        if selected_fairness == "Demographic Parity":
-            st.markdown("Note: This metric compares the expected outcomes between two gender groups. It checks if the ratio of the expected outcome for males to that of females is less than threshold."
-                        "A ratio near to 1, suggesting the model is fairer in its predictions across genders. By evaluating this metric, you can ensure that the model does not disproportionately favor one gender group over another.")
-        else:
-            st.markdown("Note: This metric compares the expected outcomes between males and females individuals who both have a high income." 
-                        "A ratio near to 1 suggests that the model produces more equitable predictions for individuals from both gender groups who share similar income level. By evaluating this metric, you can ensure that the model does not disproportionately favor one gendr group over another, particularly in the context of high income.")
+    if selected_fairness == "Equalized Odds":
+        st.markdown('<p class="big-font">Note: This fairness criterion requires that the model error rates (both false positives and false negatives) are equal for different groups.</p>', unsafe_allow_html=True)
+    else:
+        if selected_dataset_name == "Compas":
+            if selected_fairness == "Demographic Parity":
+                st.markdown('<p class="big-font">Note: This metric compares the expected outcomes between two racial groups. It checks if the ratio of the expected outcome for race1 to that of race2 is less than threshold. A ratio near to 1, suggesting the model is fairer in its predictions across races. By evaluating this metric, you can ensure that the model does not disproportionately favor one racial group over another.</p>', unsafe_allow_html=True)
+            else:
+                st.markdown('<p class="big-font">Note: This metric compares the expected outcomes between race1 and race2 individuals who both have a two-year recidivism risk score of 1. A ratio near to 1 suggests that the model produces more equitable predictions for individuals from both racial groups who share similar recidivism risk profiles. By evaluating this metric, you can ensure that the model does not disproportionately favor one racial group over another, particularly in the context of recidivism prediction.</p>', unsafe_allow_html=True)
+        elif selected_dataset_name == "Adult Income":
+            if selected_fairness == "Demographic Parity":
+                st.markdown('<p class="big-font">Note: This metric compares the expected outcomes between two gender groups. It checks if the ratio of the expected outcome for males to that of females is less than threshold. A ratio near to 1, suggesting the model is fairer in its predictions across genders. By evaluating this metric, you can ensure that the model does not disproportionately favor one gender group over another.</p>', unsafe_allow_html=True)
+            else:
+                st.markdown('<p class="big-font">Note: This metric compares the expected outcomes between males and females individuals who both have a high income. A ratio near to 1 suggests that the model produces more equitable predictions for individuals from both gender groups who share similar income level. By evaluating this metric, you can ensure that the model does not disproportionately favor one gendr group over another, particularly in the context of high income.</p>', unsafe_allow_html=True)
     # Store the selected specification in session state
     if "selected_spec_code" not in st.session_state or st.session_state.selected_spec_code != selected_spec_code:
         st.session_state.selected_spec_code = selected_spec_code
@@ -231,6 +323,7 @@ if __name__ == "__main__":
     # Retrieve the model object from session state and use it
     model_obj = st.session_state.model_obj
     provide_model_eval_interface(model_obj)
+
     # try:
     #     with st.spinner("Training model..."):
     #         model_obj = CustomDatasetModel(selected_dataset, output_var, input_vars, attr_list, selected_model)

@@ -25,11 +25,18 @@ from .compas import (
     attributes as compas_attrs
 )
 
+from .ACSIncome import (
+    load_data as load_acs,
+    attributes_dict as acs_attr_dict,
+    attributes as acs_attrs 
+)
+
 _boston = "Boston Housing Prices"
 _income = "Adult Income"
 _rmp = "Rate My Professors"
 _compas = "Compas"
-_dnames = [_income, _rmp, _compas]
+_acs = "ACSIncome"
+_dnames = [_income, _rmp, _compas, _acs]
 #_boston, 
 
 def get_dataset_names():
@@ -48,7 +55,8 @@ def get_dataset_attr_list(dataset: str) -> List[str]:
         _boston: boston_attrs,
         _income: adult_inc_attrs,
         _rmp: rmp_attrs,
-        _compas: compas_attrs
+        _compas: compas_attrs,
+        _acs: acs_attrs
     }[dataset]
 
 
@@ -58,7 +66,8 @@ def get_dataset_attr_dict(dataset: str) -> Dict[str, str]:
         _boston: boston_attr_dict,
         _income: adult_inc_attr_dict,
         _rmp: rmp_attr_dict,
-        _compas: compas_attr_dict
+        _compas: compas_attr_dict,
+        _acs: acs_attr_dict
     }[dataset]
 
 
@@ -68,5 +77,6 @@ def get_dataset(dataset: str) -> Dataset:
         _boston: load_boston,
         _income: load_adult_income,
         _rmp: load_rmp,
-        _compas: load_compas
+        _compas: load_compas,
+        _acs: load_acs
     }[dataset]()

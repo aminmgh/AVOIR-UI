@@ -7,7 +7,7 @@ import pdb
 
 from .errors import NoObservedOutcomesError
 
-TimestampedVal = namedtuple("TimestampedVal", ["value", "timestep", "stale", "prob"])
+TimestampedVal = namedtuple("TimestampedVal", ["value", "timestep", "stale", "prob", "upper", "lower"]) #TODO: Add epsilon here
 
 
 class Expression:
@@ -54,7 +54,9 @@ class HistoryLoggingExpression(Expression):
             value=old_value.value,
             timestep=old_value.timestep,
             stale=True,
-            prob=old_value.prob
+            prob=old_value.prob,
+            upper=old_value.upper,
+            lower=old_value.lower
         ) 
         self.active_value_index[with_value_key] = None
 
@@ -173,7 +175,9 @@ class HistoryLoggingExpression(Expression):
                 value=val,
                 timestep=call_id if timestep is None else timestep,
                 stale=False,
-                prob=None
+                prob=None,
+                upper=None,
+                lower=None
             ), value_key)
             self.call_ids.add(call_id)
 
@@ -195,7 +199,7 @@ class HistoryLoggingExpression(Expression):
         # clip prob to [0, 1]
         prob = max(0, min(1, prob))
 
-        self.edit_active_value(lambda tsv: TimestampedVal(value=tsv.value, timestep=tsv.timestep, stale=False, prob=prob), value_key)
+        self.edit_active_value(lambda tsv: TimestampedVal(value=tsv.value, timestep=tsv.timestep, stale=False, prob=prob, upper=tsv.upper, lower=tsv.lower), value_key)
 
         return value
     

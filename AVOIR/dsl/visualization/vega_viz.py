@@ -8,8 +8,8 @@ import pdb
 _SPEC_FILENAME = "visualization_spec_template2.vg.json"
 _SPEC_PATH = path.join(path.dirname(__file__), _SPEC_FILENAME)
 
-_DEFAULT_WIDTH = 3000
-_DEFAULT_HEIGHT = 1200
+_DEFAULT_WIDTH = 2500
+_DEFAULT_HEIGHT = 1000
 
 def add_vega_chart(viz_spec: Dict, height=_DEFAULT_HEIGHT, width=_DEFAULT_WIDTH):
     """Extends the underlying streamlit library until vega chart support added to streamlit"""
@@ -45,6 +45,8 @@ def transform_data_for_viz(dvs: List[Dict]):
         new_row["timesteps"] = [tsv.timestep for tsv in row["vals"]]
         new_row["values"] = [tsv.value for tsv in row["vals"]]
         new_row["probs"] = [tsv.prob for tsv in row["vals"]]
+        new_row["uppers"] = [tsv.upper for tsv in row["vals"]]
+        new_row["lowers"] = [tsv.lower for tsv in row["vals"]]
         return new_row
 
     data_with_seperated_vals = list(map(row_with_seperated_vals, dvs))
