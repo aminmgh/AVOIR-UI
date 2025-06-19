@@ -64,7 +64,8 @@ def provide_model_eval_interface(model_obj):
             elapsed_time = end_time - start_time
             st.success(
                 f"Fairness metric '{selected_fairness}' took "
-                f"{elapsed_time:.4f} seconds to run on dataset '{dataset_name}'."
+                f"{elapsed_time:.4f} seconds to run on dataset '{dataset_name}'.  \n" 
+                f"To see the values in the **Top Chart**, you should **double-click** on the desired node and as for the **Bottom Chart**, you should **hold shift and single-click** on the node you want."
             )
         with st.spinner("Generating spec chart"):
             data_values = model_obj.get_tabular_rep()
@@ -86,7 +87,7 @@ if __name__ == "__main__":
     # datasets
     datasets = get_dataset_names()
     st.header("Dataset Selection")
-    selected_dataset_name = st.selectbox("", datasets, index=2)
+    selected_dataset_name = st.selectbox("", datasets, index=1)
     selected_dataset = get_dataset(selected_dataset_name)
 
     dataset_attr_dict = get_dataset_attr_dict(selected_dataset_name)

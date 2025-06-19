@@ -36,8 +36,8 @@ _income = "Adult Income"
 _rmp = "Rate My Professors"
 _compas = "Compas"
 _acs = "ACSIncome"
-_dnames = [_income, _rmp, _compas, _acs]
-#_boston, 
+_dnames = [_income, _compas, _acs]
+#_boston, , _rmp
 
 def get_dataset_names():
     return _dnames
