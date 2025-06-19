@@ -528,11 +528,11 @@
             {
               "orient": "bottom",
               "scale": "x_shared",
-              "title": "Data Point #",
+              "title": "# Observed",
               "domainWidth": 3,
               "domainColor": "steelblue",
               "titleColor": "steelblue",     
-              "titleFontSize": 12          
+              "titleFontSize": 15          
             },
             {
               "orient": "left",
@@ -541,7 +541,7 @@
               "domainWidth": 3,
               "domainColor": "steelblue",
               "titleColor": "steelblue",
-              "titleFontSize": 12
+              "titleFontSize": 15
             }
           ],
           "marks": [
@@ -751,11 +751,11 @@
             {
               "orient": "bottom",
               "scale": "x_shared",
-              "title": "Data Point #",
+              "title": "# Observed",
               "domainWidth": 3,
               "domainColor": "steelblue",
               "titleColor": "steelblue",     
-              "titleFontSize": 12          
+              "titleFontSize": 15          
             },
             {
               "orient": "left",
@@ -764,7 +764,7 @@
               "domainWidth": 3,
               "domainColor": "steelblue",
               "titleColor": "steelblue",
-              "titleFontSize": 12
+              "titleFontSize": 15
             }
           ],
           "marks": [
