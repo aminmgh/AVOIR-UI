@@ -85,7 +85,7 @@ if __name__ == "__main__":
         font-size:20px !important;
     }
     """, unsafe_allow_html=True)
-    tab1, tab2 = st.tabs(["UI", "compas Case Study"])
+    tab1, tab2 = st.tabs(["UI", "Compas Case Study"])
     with tab1:
         
         # datasets
