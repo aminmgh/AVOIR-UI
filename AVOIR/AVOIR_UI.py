@@ -67,7 +67,6 @@ def provide_model_eval_interface(model_obj):
             st.success(
                 f"Fairness metric '{selected_fairness}' took "
                 f"{elapsed_time:.4f} seconds to run on dataset '{dataset_name}'.  \n" 
-                f"To see the values in the **Bottom Chart**, you should **double-click** on the desired node and as for the **Top Chart**, you should **hold shift and single-click** on the node you want."
             )
         with st.spinner("Generating spec chart"):
             data_values = model_obj.get_tabular_rep()
@@ -243,7 +242,12 @@ if __name__ == "__main__":
         # Display Fairness Notions
         st.header("Fairness Metric Selection")
         selected_fairness = st.selectbox("", list(fairness_specs_templates.keys()))
-
+        if selected_fairness == "Demographic Parity":
+            st.markdown('<p class="big-font">This fairness criterion ensures that the proportion of individuals receiving a positive outcome is equal across two groups.</p>', unsafe_allow_html=True)
+        elif selected_fairness == "Equalized Odds":
+            st.markdown('<p class="big-font"> This fairness criterion requires equal error rates for both labels (false positives and false negatives) across different groups.</p>', unsafe_allow_html=True)
+        else:
+            st.markdown('<p class="big-font"> A weaker version of Equalized Odds, this criterion focuses on equalizing the true positive rate across different groups.</p>', unsafe_allow_html=True)
         st.session_state.selected_fairness = selected_fairness  
         st.session_state.selected_dataset_name = selected_dataset_name  
 

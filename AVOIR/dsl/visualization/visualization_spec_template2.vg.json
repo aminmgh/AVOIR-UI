@@ -20,8 +20,8 @@
       "value": {},
       "on": [
         {
-          "events": "symbol:click[event.shiftKey]",
-          "update": "datum"
+          "events": "symbol:dblclick",
+          "update": "datum && datum.y < inner_height/2 ? datum : node1_selection"
         }
       ]
     },
@@ -31,7 +31,7 @@
       "on": [
         {
           "events": "symbol:dblclick",
-          "update": "datum"
+          "update": "datum && datum.y >= inner_height/2 ? datum : node2_selection"
         }
       ]
     },
