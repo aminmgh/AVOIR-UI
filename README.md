@@ -76,3 +76,7 @@ Needs at least python 3.7
 
 Need to install a solver for pyomo. We use [IPOPT](https://coin-or.github.io/Ipopt/)
 
+## Acknowledgment
+
+The authors acknowledge support from National Science Foundation (NSF) grant \#2112471 (AI-EDGE) and a grant from Cisco Research (US202581249).  Any opinions and findings are those of the author(s) and do not necessarily reflect the views of the granting agencies.
+
